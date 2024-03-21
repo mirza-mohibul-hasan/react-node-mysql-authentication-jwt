@@ -1,6 +1,7 @@
 const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
@@ -48,6 +49,27 @@ app.listen(port, () => {
 });
 
 // Working Zones
+// JWT Verification
+const verifyJWT = (req, res, next) => {
+  const token = req.headers["x-access-token"];
+  if (!token) {
+    res.send("We need a token, please give it to us next time");
+  } else {
+    jwt.verify(token, "jwtSecret", (err, decoded) => {
+      if (err) {
+        console.log(err);
+        res.json({ auth: false, message: "Auth Failed" });
+      } else {
+        req.userId = decoded.id;
+        next();
+      }
+    });
+  }
+};
+app.get("/isUserAuth", verifyJWT, (req, res) => {
+  res.send("You are authenticated Congrats:");
+});
+
 const saltRound = 10;
 
 app.post("/register", (req, res) => {
@@ -58,8 +80,8 @@ app.post("/register", (req, res) => {
       console.log(err);
     }
     db.query(
-      "INSERT INTO users (`username`, `password`) VALUES(?, ?)",
-      [username, hash],
+      "INSERT INTO users (`username`, `password`, `role`) VALUES(?, ?, ?)",
+      [username, hash, "general"],
       (err, result) => {
         if (err) {
           console.log(err);
@@ -87,14 +109,18 @@ app.post("/login", (req, res) => {
       if (result.length > 0) {
         bcrypt.compare(password, result[0].password, (error, response) => {
           if (response) {
+            const id = result[0].id;
+            const token = jwt.sign({ id }, "jwtSecret", {
+              expiresIn: 300,
+            });
             req.session.user = result;
-            res.status(200).send(result);
+            res.status(200).send({ auth: true, token, result });
           } else {
-            res.status(500).send("Wrong credentials");
+            res.json({ auth: false, message: "Wrong username password" });
           }
         });
       } else {
-        res.status(500).send("User Doesn't exists");
+        res.json({ auth: false, message: "no user exists" });
       }
     }
   );

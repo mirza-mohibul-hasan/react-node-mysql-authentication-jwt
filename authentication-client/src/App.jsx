@@ -3,7 +3,6 @@ import "./App.css";
 import axios from "axios";
 function App() {
   axios.defaults.withCredentials = true;
-  const [role, setRole] = useState("");
   const [loginStatus, setLoginStatus] = useState(false);
   const [user, setUser] = useState(null);
 
@@ -14,13 +13,10 @@ function App() {
       console.log(response);
       if (response.data.loggedIn == true) {
         setLoginStatus(true);
-        setRole(response.data.user[0].role);
         setUser(response.data.user[0]);
       }
     });
   }, [refetch]);
-  console.log("Role", role);
-  console.log("User", user);
   const handleRegister = async (event) => {
     event.preventDefault();
     const username = event.target.regusername.value;
@@ -42,11 +38,15 @@ function App() {
     axios
       .post("http://localhost:8000/login", { username, password })
       .then((response) => {
-        if (response.status === 200) {
-          alert("Successfull");
-          setRefetch(!refetch);
+        if (!response.data.auth) {
+          setLoginStatus(false);
+          alert("login failed");
         } else {
-          alert("Failed");
+          console.log(response.data);
+          localStorage.setItem("token", response.data.token);
+          setLoginStatus(true);
+          setRefetch(!refetch);
+          alert("login successfull");
         }
       });
   };
@@ -55,7 +55,6 @@ function App() {
     axios.get("http://localhost:8000/logout").then((response) => {
       if (response.status === 200) {
         setLoginStatus(false);
-        setRole("");
         setUser(null);
         alert("Successfully logged out");
       } else {
@@ -63,10 +62,23 @@ function App() {
       }
     });
   };
-
+  const userAuthenticeted = () => {
+    axios
+      .get("http://localhost:8000/isUserAuth", {
+        headers: {
+          "x-access-token": localStorage.getItem("token"),
+        },
+      })
+      .then((response) => {
+        console.log(response);
+      });
+  };
+  userAuthenticeted();
   return (
     <div className="container">
-      <h1>{user?.username}</h1>
+      <h1>
+        Name: {user?.username} Role: {user?.role}
+      </h1>
       {loginStatus && <button onClick={handleLogout}>Log Out</button>}
       <div className="auth-container">
         <h1>Register</h1>
