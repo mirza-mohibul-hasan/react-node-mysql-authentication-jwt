@@ -1,0 +1,28 @@
+.container{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  height: 100vh;
+  gap: 20px;
+}
+.auth-container{
+  width: 30%;
+  text-align: center;
+  border: 1px dotted gray;
+  padding: 10px;
+  border-radius: 20px;
+}
+.auth-form{
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.input-field{
+  height: 40px;
+}
+.submit-btn{
+  width: 80px;
+  margin: 0 auto;
+  height: 30px;
+}
